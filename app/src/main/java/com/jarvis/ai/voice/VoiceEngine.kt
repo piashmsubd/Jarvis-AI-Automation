@@ -87,7 +87,12 @@ class VoiceEngine(
         androidTts = TextToSpeech(context) { status ->
             androidTtsReady = status == TextToSpeech.SUCCESS
             if (androidTtsReady) {
-                androidTts?.language = Locale.US
+                // Try Bengali first, fall back to default
+                val bengali = Locale("bn", "BD")
+                val result = androidTts?.setLanguage(bengali)
+                if (result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    androidTts?.language = Locale.getDefault()
+                }
                 Log.i(TAG, "Android TTS initialized")
             }
         }
@@ -144,7 +149,8 @@ class VoiceEngine(
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "bn-BD")  // Bengali
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "bn-BD")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             // Keep listening until user stops (longer timeout)
