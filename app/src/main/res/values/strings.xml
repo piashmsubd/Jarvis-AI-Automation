@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Jarvis AI Automation</string>
+
+    <string name="accessibility_service_description">
+        Jarvis AI uses this accessibility service to read on-screen content
+        from messaging apps (WhatsApp, Telegram, Messenger), detect incoming
+        messages, and perform automated actions like replying to messages on
+        your behalf. This service runs only when you explicitly enable it.
+    </string>
+
+    <!-- Settings Keys -->
+    <string name="pref_openrouter_key">pref_openrouter_api_key</string>
+    <string name="pref_openai_key">pref_openai_api_key</string>
+    <string name="pref_gemini_key">pref_gemini_api_key</string>
+    <string name="pref_claude_key">pref_claude_api_key</string>
+    <string name="pref_groq_key">pref_groq_api_key</string>
+    <string name="pref_cartesia_key">pref_cartesia_api_key</string>
+    <string name="pref_speechify_key">pref_speechify_api_key</string>
+    <string name="pref_custom_base_url">pref_custom_base_url</string>
+    <string name="pref_selected_provider">pref_selected_provider</string>
+    <string name="pref_selected_model">pref_selected_model</string>
+    <string name="pref_tts_provider">pref_tts_provider</string>
+    <string name="pref_cartesia_voice_id">pref_cartesia_voice_id</string>
+</resources>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Accessibility Service Configuration for Jarvis AI.
+
+    Key flags:
+    - flagReportViewIds: gives us View IDs so we can target specific UI elements
+      (e.g., WhatsApp's message input field, send button).
+    - flagRetrieveInteractiveWindows: lets us read content from all windows,
+      including system dialogs.
+    - flagRequestFilterKeyEvents: allows intercepting key events for wake-word
+      hardware button triggers.
+    - flagIncludeNotImportantViews: captures ALL view nodes, not just
+      "important for accessibility" ones — essential for scraping message lists.
+
+    eventTypes:
+    - typeAllMask: captures every accessibility event. In the service code,
+      we filter to only process the ones we care about.
+
+    packageNames are NOT restricted here so the service can read ANY foreground
+    app. Filtering is done in code for WhatsApp, Telegram, Messenger, etc.
+-->
+<accessibility-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackSpoken|feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows|flagRequestFilterKeyEvents|flagIncludeNotImportantViews"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="true"
+    android:canTakeScreenshot="true"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="100"
+    android:settingsActivity="com.jarvis.ai.ui.settings.SettingsActivity" />

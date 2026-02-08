@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Jarvis Settings"
+            android:textColor="#1A73E8"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:layout_marginBottom="24dp" />
+
+        <!-- LLM Provider Selection -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="LLM PROVIDER"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <Spinner
+            android:id="@+id/spinnerProvider"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#2A2A2A"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Model Override -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Model Override (optional)"
+            android:layout_marginBottom="16dp"
+            app:hintTextColor="#888888"
+            app:boxStrokeColor="#1A73E8">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etModel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Custom Base URL -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutCustomUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Custom Base URL"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp"
+            app:hintTextColor="#888888"
+            app:boxStrokeColor="#1A73E8">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCustomUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textUri" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Section: API Keys -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="API KEYS"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- OpenRouter -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="OpenRouter API Key"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#888888"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="#1A73E8">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etOpenRouterKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- OpenAI -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="OpenAI API Key"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#888888"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="#1A73E8">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etOpenAiKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Gemini -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Gemini API Key"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#888888"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="#1A73E8">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etGeminiKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Claude -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Claude API Key"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#888888"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="#1A73E8">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etClaudeKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Groq -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Groq API Key"
+            android:layout_marginBottom="24dp"
+            app:hintTextColor="#888888"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="#1A73E8">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etGroqKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Section: TTS -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TEXT-TO-SPEECH"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <Spinner
+            android:id="@+id/spinnerTts"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#2A2A2A"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Cartesia -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cartesia API Key"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#888888"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="#00BCD4">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCartesiaKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Cartesia Voice ID -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cartesia Voice ID (browse: play.cartesia.ai)"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#888888"
+            app:boxStrokeColor="#00BCD4">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCartesiaVoiceId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Cartesia WebSocket toggle -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchCartesiaWs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Use WebSocket (ultra-low latency)"
+            android:textColor="#CCCCCC"
+            android:textSize="13sp"
+            android:checked="true"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Speechify -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Speechify API Key"
+            android:layout_marginBottom="24dp"
+            app:hintTextColor="#888888"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="#00BCD4">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSpeechifyKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Section: Wake Word -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="WAKE WORD DETECTION"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchWakeWord"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable \"Hey Jarvis\" wake word"
+            android:textColor="#CCCCCC"
+            android:textSize="13sp"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Picovoice Access Key (console.picovoice.ai)"
+            android:layout_marginBottom="8dp"
+            app:hintTextColor="#888888"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="#FF9800">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPicovoiceKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Free key: https://console.picovoice.ai/\nBuilt-in keyword: JARVIS (no model file needed)"
+            android:textColor="#666666"
+            android:textSize="11sp"
+            android:layout_marginBottom="24dp"
+            android:fontFamily="monospace" />
+
+        <!-- Section: Permissions -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="PERMISSIONS"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEnableAccessibility"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable Accessibility Service"
+            android:layout_marginBottom="8dp"
+            app:backgroundTint="#2A2A2A"
+            android:textColor="#FFFFFF" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEnableNotificationListener"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable Notification Access"
+            android:layout_marginBottom="8dp"
+            app:backgroundTint="#2A2A2A"
+            android:textColor="#FFFFFF" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEnableOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable Overlay Permission"
+            android:layout_marginBottom="24dp"
+            app:backgroundTint="#2A2A2A"
+            android:textColor="#FFFFFF" />
+
+        <!-- Save Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSave"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="SAVE SETTINGS"
+            android:textSize="16sp"
+            app:backgroundTint="#1A73E8" />
+
+    </LinearLayout>
+</ScrollView>

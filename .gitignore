@@ -1,0 +1,25 @@
+# Built outputs
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/app/build/
+/captures
+.externalNativeBuild/
+.cxx/
+
+# Gradle wrapper jar (downloaded by CI via gradle-wrapper.properties)
+# If you prefer to check it in, remove this line.
+gradle/wrapper/gradle-wrapper.jar
+
+# Secrets — never commit these
+local.properties
+Secrets.kt
+*.jks
+*.keystore
+
+# OS files
+.DS_Store
+Thumbs.db

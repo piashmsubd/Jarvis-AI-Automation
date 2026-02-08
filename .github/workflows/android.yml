@@ -1,0 +1,76 @@
+name: Android CI
+
+# ──────────────────────────────────────────────────────────────────────
+#  Triggers: every push and PR to main/master, plus manual dispatch.
+# ──────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:           # allows manual "Run workflow" from GitHub UI
+
+# Cancel in-progress runs on the same branch to save runner minutes
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. JDK 17 ───────────────────────────────────────────────────
+      #  AGP 8.2.x requires JDK 17. Temurin is the most reliable
+      #  distribution on GitHub-hosted runners.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # ── 3. Gradle setup + caching ───────────────────────────────────
+      #  gradle/actions/setup-gradle handles:
+      #    - Downloading the Gradle distribution from gradle-wrapper.properties
+      #    - Caching ~/.gradle/caches and ~/.gradle/wrapper between runs
+      #    - Providing the `gradle` command even without a wrapper jar
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # ── 4. Create local.properties ──────────────────────────────────
+      #  The build.gradle.kts reads local.properties for BuildConfig
+      #  secrets. CI doesn't have this file, so we generate a minimal
+      #  one with the Android SDK path and optional secrets from
+      #  GitHub repository secrets.
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" >> local.properties
+          echo "CARTESIA_API_KEY=${{ secrets.CARTESIA_API_KEY }}" >> local.properties
+
+      # ── 5. Make gradlew executable ──────────────────────────────────
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # ── 6. Build debug APK ──────────────────────────────────────────
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      # ── 7. Upload APK artifact ──────────────────────────────────────
+      #  The debug APK lands at:
+      #    app/build/outputs/apk/debug/app-debug.apk
+      #  After the workflow completes, download it from the
+      #  "Actions" tab → run → "Artifacts" section at the bottom.
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jarvis-ai-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

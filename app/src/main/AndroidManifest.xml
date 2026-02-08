@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.jarvis.ai">
+
+    <!-- ============================================================== -->
+    <!--  PERMISSIONS: Network, Audio, System, Overlay                    -->
+    <!-- ============================================================== -->
+
+    <!-- Network -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- Audio / Voice (required for STT, Wake Word, and audio playback) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- Overlay (Floating Action Button) -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- Foreground Service (keeps voice/accessibility/wake-word alive) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
+    <!-- Vibrate for haptic feedback on wake-word detection -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Read phone state for call detection -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- Post notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Battery / device health queries -->
+    <uses-permission android:name="android.permission.BATTERY_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Wake lock to keep processing during long TTS/STT -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Receive boot completed to auto-start wake word listener -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Query which packages are installed (Android 11+) -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="org.telegram.messenger" />
+        <package android:name="com.facebook.orca" />
+        <package android:name="com.facebook.katana" />
+        <package android:name="com.instagram.android" />
+    </queries>
+
+    <application
+        android:name=".JarvisApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.JarvisAI"
+        android:usesCleartextTraffic="false"
+        tools:targetApi="34">
+
+        <!-- ====================================================== -->
+        <!--  MAIN ACTIVITY                                          -->
+        <!-- ====================================================== -->
+        <activity
+            android:name=".ui.main.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.JarvisAI">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ====================================================== -->
+        <!--  SETTINGS ACTIVITY                                      -->
+        <!-- ====================================================== -->
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:exported="false"
+            android:label="Jarvis Settings"
+            android:parentActivityName=".ui.main.MainActivity" />
+
+        <!-- ====================================================== -->
+        <!--  WEBVIEW ACTIVITY  (Browser / Search)                   -->
+        <!--  Full browser with JS, DOM storage, and page text       -->
+        <!--  extraction for AI context injection.                   -->
+        <!-- ====================================================== -->
+        <activity
+            android:name=".ui.web.WebViewActivity"
+            android:exported="false"
+            android:label="Jarvis Browser"
+            android:parentActivityName=".ui.main.MainActivity"
+            android:configChanges="orientation|screenSize|layoutDirection" />
+
+        <!-- ====================================================== -->
+        <!--  ACCESSIBILITY SERVICE  (The Eyes & Hands)              -->
+        <!-- ====================================================== -->
+        <service
+            android:name=".accessibility.JarvisAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- ====================================================== -->
+        <!--  NOTIFICATION LISTENER SERVICE                          -->
+        <!-- ====================================================== -->
+        <service
+            android:name=".service.JarvisNotificationListener"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- ====================================================== -->
+        <!--  FLOATING OVERLAY SERVICE  (FAB Trigger)                -->
+        <!-- ====================================================== -->
+        <service
+            android:name=".service.FloatingOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
+        <!-- ====================================================== -->
+        <!--  VOICE PROCESSING SERVICE                               -->
+        <!-- ====================================================== -->
+        <service
+            android:name=".voice.VoiceProcessingService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
+        <!-- ====================================================== -->
+        <!--  WAKE WORD SERVICE  ("Hey Jarvis" Detector)             -->
+        <!--  Uses Picovoice Porcupine for offline wake word.        -->
+        <!--  foregroundServiceType=microphone since it records.     -->
+        <!-- ====================================================== -->
+        <service
+            android:name=".voice.WakeWordService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
+        <!-- ====================================================== -->
+        <!--  BOOT RECEIVER (auto-start wake word on device boot)    -->
+        <!-- ====================================================== -->
+        <receiver
+            android:name=".service.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>
