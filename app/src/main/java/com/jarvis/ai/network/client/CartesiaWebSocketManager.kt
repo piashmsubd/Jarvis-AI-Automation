@@ -39,8 +39,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 class CartesiaWebSocketManager(
     private val apiKey: String,
     private val voiceId: String = CartesiaTtsClient.DEFAULT_VOICE_ID,
-    private val modelId: String = "sonic-2024-10-01",
-    private val sampleRate: Int = 24000
+    private val modelId: String = CartesiaTtsClient.DEFAULT_MODEL_ID,
+    private val sampleRate: Int = 24000,
+    private val defaultLanguage: String = CartesiaTtsClient.DEFAULT_LANGUAGE
 ) {
     companion object {
         private const val TAG = "CartesiaWS"
@@ -152,7 +153,7 @@ class CartesiaWebSocketManager(
      */
     suspend fun speak(
         text: String,
-        language: String = "en",
+        language: String = defaultLanguage,
         onComplete: (() -> Unit)? = null
     ) {
         if (text.isBlank()) return
@@ -216,7 +217,7 @@ class CartesiaWebSocketManager(
         text: String,
         contextId: String,
         isFinal: Boolean = false,
-        language: String = "en"
+        language: String = defaultLanguage
     ) {
         ensureConnected()
 

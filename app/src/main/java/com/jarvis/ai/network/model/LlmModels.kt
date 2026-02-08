@@ -161,7 +161,7 @@ data class Usage(
 
 data class CartesiaTtsRequest(
     @SerializedName("model_id")
-    val modelId: String = "sonic-2024-10-01",
+    val modelId: String = "sonic-3",
 
     @SerializedName("transcript")
     val transcript: String,

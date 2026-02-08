@@ -1,7 +1,10 @@
 package com.jarvis.ai.ui.settings
 
+import android.app.AlertDialog
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
@@ -59,7 +62,6 @@ class SettingsActivity : AppCompatActivity() {
         )
         binding.spinnerProvider.adapter = adapter
 
-        // Show/hide custom URL field based on selection
         binding.spinnerProvider.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 val selected = llmProviders[pos]
@@ -109,15 +111,45 @@ class SettingsActivity : AppCompatActivity() {
         binding.etPicovoiceKey.setText(prefManager.picovoiceAccessKey)
     }
 
+    // ------------------------------------------------------------------ //
+    //  Permission Buttons — with Restricted Settings fix                  //
+    // ------------------------------------------------------------------ //
+
     private fun setupPermissionButtons() {
+
+        // ---------- ACCESSIBILITY ----------
         binding.btnEnableAccessibility.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            if (JarvisAccessibilityService.isRunning) {
+                Toast.makeText(this, "Already enabled!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            // On Android 13+, sideloaded APKs get blocked ("Restricted setting").
+            // User must first go to App Info > 3-dot menu > Allow restricted settings.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                showRestrictedSettingsGuide("Accessibility Service") {
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                }
+            } else {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
         }
 
+        // ---------- NOTIFICATION LISTENER ----------
         binding.btnEnableNotificationListener.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            if (JarvisNotificationListener.isRunning) {
+                Toast.makeText(this, "Already enabled!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                showRestrictedSettingsGuide("Notification Access") {
+                    startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                }
+            } else {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            }
         }
 
+        // ---------- OVERLAY ----------
         binding.btnEnableOverlay.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) {
                 val intent = Intent(
@@ -128,6 +160,49 @@ class SettingsActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "Overlay permission already granted", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        // ---------- ALLOW RESTRICTED SETTINGS (direct shortcut) ----------
+        binding.btnAllowRestricted.setOnClickListener {
+            openAppInfoPage()
+        }
+    }
+
+    /**
+     * Shows an AlertDialog explaining HOW to fix the "Restricted Setting"
+     * block on Android 13+, then opens the permission page.
+     */
+    private fun showRestrictedSettingsGuide(permissionName: String, onProceed: () -> Unit) {
+        AlertDialog.Builder(this, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_Dialog_Alert)
+            .setTitle("Restricted Setting - $permissionName")
+            .setMessage(
+                "Android 13+ blocks this permission for sideloaded apps.\n\n" +
+                "FIRST do this:\n" +
+                "1. Tap 'Open App Info' below\n" +
+                "2. Tap the 3-dot menu (top-right corner)\n" +
+                "3. Tap 'Allow restricted settings'\n" +
+                "4. Enter your PIN/fingerprint\n" +
+                "5. Come back and tap this button again\n\n" +
+                "If you already did this, tap 'Go to Settings' to enable the permission."
+            )
+            .setPositiveButton("Go to Settings") { _, _ -> onProceed() }
+            .setNeutralButton("Open App Info") { _, _ -> openAppInfoPage() }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /**
+     * Opens the App Info page for Jarvis AI Automation.
+     * From there, user taps 3-dot menu > "Allow restricted settings".
+     */
+    private fun openAppInfoPage() {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Could not open App Info", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -188,7 +263,6 @@ class SettingsActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ //
 
     private fun updatePermissionStatuses() {
-        // Accessibility
         val a11yEnabled = JarvisAccessibilityService.isRunning
         binding.btnEnableAccessibility.text = if (a11yEnabled) {
             "Accessibility: ENABLED"
@@ -196,7 +270,6 @@ class SettingsActivity : AppCompatActivity() {
             "Enable Accessibility Service"
         }
 
-        // Notification Listener
         val notifEnabled = JarvisNotificationListener.isRunning
         binding.btnEnableNotificationListener.text = if (notifEnabled) {
             "Notification Access: ENABLED"
@@ -204,12 +277,15 @@ class SettingsActivity : AppCompatActivity() {
             "Enable Notification Access"
         }
 
-        // Overlay
         val overlayEnabled = Settings.canDrawOverlays(this)
         binding.btnEnableOverlay.text = if (overlayEnabled) {
             "Overlay Permission: ENABLED"
         } else {
             "Enable Overlay Permission"
         }
+
+        // Show/hide the restricted settings button based on Android version
+        binding.btnAllowRestricted.visibility =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) View.VISIBLE else View.GONE
     }
 }

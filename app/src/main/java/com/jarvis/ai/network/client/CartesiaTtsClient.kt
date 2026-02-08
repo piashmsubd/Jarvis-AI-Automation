@@ -32,17 +32,27 @@ class CartesiaTtsClient(
     companion object {
         private const val TAG = "CartesiaTTS"
 
-        // Default voice: "Confident British Male" — Jarvis-like
-        const val DEFAULT_VOICE_ID = "a0e99841-438c-4a64-b679-ae501e7d6091"
-        const val DEFAULT_MODEL_ID = "sonic-2024-10-01"
+        // Default voice: Bangla Girl (Pooja) — soft-spoken female
+        const val DEFAULT_VOICE_ID = "d8909a06-7a08-4400-831a-0a6042cabd4a"
+        const val DEFAULT_MODEL_ID = "sonic-3"
 
-        // Some curated voice IDs for quick selection
+        // Curated voice IDs — Bangla + English presets
         val PRESET_VOICES = mapOf(
+            // ── Bangla (Bengali) Female Voices ──
+            "Pooja (Bangla Girl)" to "d8909a06-7a08-4400-831a-0a6042cabd4a",
+            // ── Bangla (Bengali) Male Voices ──
+            "Rubel (Bangla Male)" to "2e078fba-c60e-4e24-a7fb-38b202e92e10",
+            // ── English Female Voices ──
+            "Katie (EN Female)" to "f786b574-daa5-4673-aa0c-cbe3e8534c02",
+            "Brooke (EN Female)" to "820a3788-2b37-4d21-847a-b65d8a68c99a",
+            "Tessa (EN Emotive)" to "c2ac25f9-ecc4-4f56-9095-651271d3b390",
+            // ── English Male Voices ──
             "British Male (Jarvis)" to "a0e99841-438c-4a64-b679-ae501e7d6091",
-            "Professional Female" to "694f9389-aac1-45b6-b726-9d9369183238",
-            "Warm Narrator" to "6ccbfb76-1fc6-48f7-b71d-91ac6298247b",
-            "Friendly Assistant" to "f786b574-daa5-4673-aa0c-cbe3e8534c02"
+            "Ronald (EN Male)" to "694f9389-aac1-45b6-b726-9d9369183238"
         )
+
+        // Default language for TTS
+        const val DEFAULT_LANGUAGE = "bn"  // Bengali
     }
 
     private val service = NetworkClient.getCartesiaService()
@@ -58,7 +68,7 @@ class CartesiaTtsClient(
      */
     suspend fun synthesize(
         text: String,
-        language: String = "en"
+        language: String = DEFAULT_LANGUAGE
     ): Result<ByteArray> = withContext(Dispatchers.IO) {
         try {
             val request = CartesiaTtsRequest(
@@ -101,7 +111,7 @@ class CartesiaTtsClient(
      */
     suspend fun speak(
         text: String,
-        language: String = "en"
+        language: String = DEFAULT_LANGUAGE
     ): Result<Unit> = withContext(Dispatchers.IO) {
         val audioResult = synthesize(text, language)
 
@@ -125,7 +135,7 @@ class CartesiaTtsClient(
     suspend fun synthesizeToFile(
         text: String,
         outputFile: File,
-        language: String = "en"
+        language: String = DEFAULT_LANGUAGE
     ): Result<File> = withContext(Dispatchers.IO) {
         val audioResult = synthesize(text, language)
 

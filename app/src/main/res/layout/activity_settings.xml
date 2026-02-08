@@ -225,7 +225,7 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Cartesia Voice ID (browse: play.cartesia.ai)"
+            android:hint="Voice ID (Bangla Girl: see below)"
             android:layout_marginBottom="12dp"
             app:hintTextColor="#888888"
             app:boxStrokeColor="#00BCD4">
@@ -237,6 +237,16 @@
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Bangla voice presets info -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="BANGLA GIRL VOICES (paste ID above):\nPooja: Soft-spoken female - conversational\nBrowse more: play.cartesia.ai\nSet language to bn (Bengali) in code"
+            android:textColor="#00BCD4"
+            android:textSize="11sp"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="monospace" />
 
         <!-- Cartesia WebSocket toggle -->
         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -324,11 +334,31 @@
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
+        <!-- IMPORTANT: This button fixes the Android 13+ restriction -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAllowRestricted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="STEP 1: Allow Restricted Settings"
+            android:layout_marginBottom="4dp"
+            app:backgroundTint="#FF9800"
+            android:textColor="#000000"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tap above > 3-dot menu (top-right) > Allow restricted settings > Enter PIN. Then come back and enable below."
+            android:textColor="#FF9800"
+            android:textSize="11sp"
+            android:layout_marginBottom="12dp"
+            android:fontFamily="monospace" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEnableAccessibility"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enable Accessibility Service"
+            android:text="STEP 2: Enable Accessibility Service"
             android:layout_marginBottom="8dp"
             app:backgroundTint="#2A2A2A"
             android:textColor="#FFFFFF" />
@@ -337,7 +367,7 @@
             android:id="@+id/btnEnableNotificationListener"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enable Notification Access"
+            android:text="STEP 3: Enable Notification Access"
             android:layout_marginBottom="8dp"
             app:backgroundTint="#2A2A2A"
             android:textColor="#FFFFFF" />
@@ -346,7 +376,7 @@
             android:id="@+id/btnEnableOverlay"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enable Overlay Permission"
+            android:text="STEP 4: Enable Overlay Permission"
             android:layout_marginBottom="24dp"
             app:backgroundTint="#2A2A2A"
             android:textColor="#FFFFFF" />
