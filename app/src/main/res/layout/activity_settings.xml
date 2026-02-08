@@ -282,7 +282,7 @@
             android:id="@+id/switchWakeWord"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enable \"Hey Jarvis\" wake word"
+            android:text="Enable Hey Jarvis wake word"
             android:textColor="#CCCCCC"
             android:textSize="13sp"
             android:layout_marginBottom="12dp" />
