@@ -46,7 +46,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         app:cardBackgroundColor="#1E1E1E"
         app:cardCornerRadius="12dp"
         app:strokeWidth="0dp"
@@ -58,15 +58,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
             <TextView
                 android:id="@+id/tvStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Status: Ready"
-                android:textColor="#4CAF50"
-                android:textSize="14sp"
+                android:text="Status: Inactive"
+                android:textColor="#FF5722"
+                android:textSize="16sp"
+                android:textStyle="bold"
                 android:fontFamily="monospace" />
 
             <TextView
@@ -76,17 +77,17 @@
                 android:layout_marginTop="4dp"
                 android:text="Provider: Not configured"
                 android:textColor="#888888"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:fontFamily="monospace" />
 
             <TextView
                 android:id="@+id/tvAccessibility"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Accessibility: Disabled"
+                android:layout_marginTop="2dp"
+                android:text="Notifications: OFF"
                 android:textColor="#FF5722"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:fontFamily="monospace" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -97,11 +98,11 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/statusCard"
-        app:layout_constraintBottom_toTopOf="@id/inputBar"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -110,58 +111,68 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#E0E0E0"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:fontFamily="monospace"
             android:lineSpacingMultiplier="1.3"
-            android:text="Jarvis AI initialized. Tap the mic to speak or type a command.\n" />
+            android:text="" />
     </ScrollView>
 
-    <!-- Bottom Input Bar -->
+    <!-- Bottom Bar: Big Activate Button + Text Input -->
     <LinearLayout
-        android:id="@+id/inputBar"
+        android:id="@+id/bottomBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:padding="12dp"
-        android:gravity="center_vertical"
         android:background="#1E1E1E"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etInput"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:hint="Type a command..."
-            android:textColor="#FFFFFF"
-            android:textColorHint="#666666"
-            android:background="#2A2A2A"
-            android:paddingHorizontal="16dp"
-            android:textSize="14sp"
-            android:singleLine="true"
-            android:imeOptions="actionSend" />
+        <!-- Text input row (for when you don't want to speak) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
-        <ImageButton
-            android:id="@+id/btnSend"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:src="@android:drawable/ic_menu_send"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Send"
-            app:tint="#1A73E8" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etInput"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:hint="Type koren (optional)..."
+                android:textColor="#FFFFFF"
+                android:textColorHint="#666666"
+                android:background="#2A2A2A"
+                android:paddingHorizontal="12dp"
+                android:textSize="13sp"
+                android:singleLine="true"
+                android:imeOptions="actionSend" />
 
-        <ImageButton
-            android:id="@+id/btnMic"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_marginStart="4dp"
-            android:src="@android:drawable/ic_btn_speak_now"
-            android:background="@android:drawable/dialog_holo_dark_frame"
-            android:contentDescription="Voice Input"
-            app:tint="#1A73E8" />
+            <ImageButton
+                android:id="@+id/btnSend"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="8dp"
+                android:src="@android:drawable/ic_menu_send"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Send"
+                app:tint="#1A73E8" />
+        </LinearLayout>
+
+        <!-- THE BIG BUTTON -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnActivate"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:text="ACTIVATE JARVIS"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:backgroundTint="#1A73E8"
+            app:cornerRadius="16dp" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

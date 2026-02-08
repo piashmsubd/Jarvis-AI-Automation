@@ -144,6 +144,16 @@
             android:foregroundServiceType="specialUse" />
 
         <!-- ====================================================== -->
+        <!--  LIVE VOICE AGENT (Always-on autonomous assistant)      -->
+        <!--  Runs continuous: listen → think → speak → listen loop  -->
+        <!--  Uses microphone for STT, foreground for persistence    -->
+        <!-- ====================================================== -->
+        <service
+            android:name=".service.LiveVoiceAgent"
+            android:exported="false"
+            android:foregroundServiceType="microphone|specialUse" />
+
+        <!-- ====================================================== -->
         <!--  WAKE WORD SERVICE  ("Hey Jarvis" Detector)             -->
         <!--  Uses Picovoice Porcupine for offline wake word.        -->
         <!--  foregroundServiceType=microphone since it records.     -->

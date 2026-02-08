@@ -1,71 +1,39 @@
 package com.jarvis.ai.ui.main
 
 import android.Manifest
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.inputmethod.EditorInfo
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.jarvis.ai.accessibility.JarvisAccessibilityService
 import com.jarvis.ai.databinding.ActivityMainBinding
-import com.jarvis.ai.service.FloatingOverlayService
-import com.jarvis.ai.service.JarvisBrain
 import com.jarvis.ai.service.JarvisNotificationListener
+import com.jarvis.ai.service.LiveVoiceAgent
+import com.jarvis.ai.service.LiveVoiceAgent.Companion.AgentState
 import com.jarvis.ai.ui.settings.SettingsActivity
 import com.jarvis.ai.util.PreferenceManager
-import com.jarvis.ai.voice.VoiceEngine
-import com.jarvis.ai.voice.WakeWordService
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
- * MainActivity — Primary UI for Jarvis AI.
+ * MainActivity — Single-screen UI for Jarvis AI.
  *
- * Shows the conversation log, voice state indicator, and text input.
- * Connects VoiceEngine, JarvisBrain, WakeWordService, and the
- * Accessibility/Notification services.
- *
- * Handles these incoming intents:
- *   - FloatingOverlayService.ACTION_START_LISTENING: FAB mic tap
- *   - WakeWordService.ACTION_WAKE_WORD_DETECTED: "Hey Jarvis" detected
+ * One big ACTIVATE button starts the LiveVoiceAgent foreground service.
+ * The agent runs a continuous voice loop in the background.
+ * This screen just shows the conversation log and status.
  */
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        private const val TAG = "MainActivity"
-        private const val REQUEST_AUDIO_PERMISSION = 1001
+        private const val REQUEST_PERMISSIONS = 1001
     }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefManager: PreferenceManager
-    private lateinit var voiceEngine: VoiceEngine
-    private lateinit var brain: JarvisBrain
-
-    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-
-    // Broadcast receiver for wake word events from the service
-    private val wakeWordReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == WakeWordService.ACTION_WAKE_WORD_DETECTED) {
-                appendToConversation("SYSTEM", "Wake word detected!")
-                startVoiceInput()
-            }
-        }
-    }
-
-    // ------------------------------------------------------------------ //
-    //  Lifecycle                                                          //
-    // ------------------------------------------------------------------ //
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,74 +41,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefManager = PreferenceManager(this)
-        voiceEngine = VoiceEngine(this, prefManager)
-        brain = JarvisBrain(this, prefManager, voiceEngine)
-
-        voiceEngine.initialize()
-        brain.refreshLlmClient()
 
         setupUI()
-        observeVoiceState()
+        observeAgent()
         requestPermissions()
-
-        // Register broadcast receiver for wake word events
-        val filter = IntentFilter(WakeWordService.ACTION_WAKE_WORD_DETECTED)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(wakeWordReceiver, filter, RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(wakeWordReceiver, filter)
-        }
-
-        // Start wake word service if configured
-        startWakeWordIfEnabled()
-
-        // Handle intent that launched this activity
-        handleIncomingIntent(intent)
     }
 
     override fun onResume() {
         super.onResume()
         updateStatusIndicators()
-        brain.refreshLlmClient()
-        voiceEngine.refreshCartesiaClient()
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        intent?.let { handleIncomingIntent(it) }
-    }
-
-    override fun onDestroy() {
-        unregisterReceiver(wakeWordReceiver)
-        voiceEngine.destroy()
-        brain.destroy()
-        super.onDestroy()
-    }
-
-    // ------------------------------------------------------------------ //
-    //  Intent Routing                                                     //
-    // ------------------------------------------------------------------ //
-
-    /**
-     * Handles intents from:
-     *   - FloatingOverlayService (FAB tap)
-     *   - WakeWordService ("Hey Jarvis" detected)
-     *   - BootReceiver (auto-start)
-     */
-    private fun handleIncomingIntent(intent: Intent) {
-        when (intent.action) {
-            FloatingOverlayService.ACTION_START_LISTENING -> {
-                startVoiceInput()
-            }
-            FloatingOverlayService.ACTION_STOP_LISTENING -> {
-                voiceEngine.stopListening()
-            }
-            WakeWordService.ACTION_WAKE_WORD_DETECTED -> {
-                appendToConversation("SYSTEM", "\"Hey Jarvis\" detected! Listening...")
-                // Small delay to let the wake word mic release
-                binding.root.postDelayed({ startVoiceInput() }, 300)
-            }
-        }
+        updateActivateButton()
     }
 
     // ------------------------------------------------------------------ //
@@ -148,133 +58,99 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ //
 
     private fun setupUI() {
-        // Settings button
+        // Settings
         binding.btnSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        // Send button
+        // THE BIG BUTTON
+        binding.btnActivate.setOnClickListener {
+            if (LiveVoiceAgent.isActive) {
+                LiveVoiceAgent.stop(this)
+                appendLog("SYSTEM", "Jarvis deactivated.")
+            } else {
+                if (!hasAudioPermission()) {
+                    requestPermissions()
+                    return@setOnClickListener
+                }
+                if (prefManager.getApiKeyForProvider(prefManager.selectedLlmProvider).isBlank()) {
+                    appendLog("SYSTEM", "API key set koren Settings e giye!")
+                    return@setOnClickListener
+                }
+                LiveVoiceAgent.start(this)
+                appendLog("SYSTEM", "Jarvis activating...")
+            }
+            updateActivateButton()
+        }
+
+        // Text input (alternative to voice)
         binding.btnSend.setOnClickListener {
-            val input = binding.etInput.text.toString().trim()
-            if (input.isNotBlank()) {
-                processUserInput(input)
+            val text = binding.etInput.text?.toString()?.trim() ?: ""
+            if (text.isNotBlank()) {
                 binding.etInput.text?.clear()
+                appendLog("YOU (typed)", text)
             }
         }
 
-        // Enter key sends
         binding.etInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) {
                 binding.btnSend.performClick()
                 true
             } else false
         }
-
-        // Mic button
-        binding.btnMic.setOnClickListener {
-            if (voiceEngine.state.value == VoiceEngine.State.LISTENING) {
-                voiceEngine.stopListening()
-            } else {
-                startVoiceInput()
-            }
-        }
-
-        // Brain response callback — update conversation log on UI thread
-        brain.onResponseCallback = { response ->
-            runOnUiThread {
-                appendToConversation("JARVIS", response)
-            }
-        }
     }
 
-    private fun observeVoiceState() {
+    // ------------------------------------------------------------------ //
+    //  Observe LiveVoiceAgent state and conversation log                  //
+    // ------------------------------------------------------------------ //
+
+    private fun observeAgent() {
         lifecycleScope.launch {
-            voiceEngine.state.collectLatest { state ->
-                val statusText = when (state) {
-                    VoiceEngine.State.IDLE -> "Ready"
-                    VoiceEngine.State.LISTENING -> "Listening..."
-                    VoiceEngine.State.PROCESSING -> "Processing..."
-                    VoiceEngine.State.SPEAKING -> "Speaking..."
-                    VoiceEngine.State.ERROR -> "Error"
+            LiveVoiceAgent.agentState.collectLatest { state ->
+                val (text, color) = when (state) {
+                    AgentState.INACTIVE -> "Inactive" to 0xFFFF5722.toInt()
+                    AgentState.GREETING -> "Greeting..." to 0xFF00BCD4.toInt()
+                    AgentState.LISTENING -> "Listening... Bolun!" to 0xFF1A73E8.toInt()
+                    AgentState.THINKING -> "Thinking..." to 0xFFFF9800.toInt()
+                    AgentState.SPEAKING -> "Speaking..." to 0xFF00BCD4.toInt()
+                    AgentState.PAUSED -> "Paused" to 0xFF888888.toInt()
                 }
-                binding.tvStatus.text = "Status: $statusText"
-                binding.tvStatus.setTextColor(
-                    when (state) {
-                        VoiceEngine.State.LISTENING -> 0xFF1A73E8.toInt()
-                        VoiceEngine.State.SPEAKING -> 0xFF00BCD4.toInt()
-                        VoiceEngine.State.ERROR -> 0xFFFF5722.toInt()
-                        else -> 0xFF4CAF50.toInt()
-                    }
-                )
+                binding.tvStatus.text = "Status: $text"
+                binding.tvStatus.setTextColor(color)
+                updateActivateButton()
             }
         }
 
         lifecycleScope.launch {
-            voiceEngine.lastTranscript.collectLatest { transcript ->
-                if (transcript.isNotBlank()) {
-                    binding.etInput.setText(transcript)
-                }
+            LiveVoiceAgent.conversationLog.collect { entry ->
+                appendLog(entry.sender, entry.text, entry.time)
             }
         }
     }
 
     // ------------------------------------------------------------------ //
-    //  Voice & Input Processing                                           //
+    //  UI Helpers                                                         //
     // ------------------------------------------------------------------ //
 
-    private fun startVoiceInput() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.RECORD_AUDIO),
-                REQUEST_AUDIO_PERMISSION
-            )
-            return
-        }
-
-        voiceEngine.startListening { transcript ->
-            runOnUiThread {
-                if (transcript.isNotBlank()) {
-                    processUserInput(transcript)
-                }
-            }
-        }
-    }
-
-    private fun processUserInput(input: String) {
-        appendToConversation("YOU", input)
-        brain.processInput(input)
-    }
-
-    private fun appendToConversation(sender: String, message: String) {
-        val time = timeFormat.format(Date())
-        val formatted = "[$time] $sender: $message\n\n"
+    private fun appendLog(sender: String, text: String, time: String? = null) {
+        val t = time ?: java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+            .format(java.util.Date())
+        val formatted = "[$t] $sender: $text\n\n"
         binding.tvConversation.append(formatted)
-
-        // Auto-scroll to bottom
         binding.scrollView.post {
             binding.scrollView.fullScroll(android.view.View.FOCUS_DOWN)
         }
     }
 
-    // ------------------------------------------------------------------ //
-    //  Wake Word Service Control                                          //
-    // ------------------------------------------------------------------ //
-
-    private fun startWakeWordIfEnabled() {
-        if (prefManager.wakeWordEnabled && prefManager.picovoiceAccessKey.isNotBlank()) {
-            if (!WakeWordService.isRunning) {
-                WakeWordService.start(this)
-                appendToConversation("SYSTEM", "Wake word detection active. Say \"Hey Jarvis\" anytime.")
-            }
+    private fun updateActivateButton() {
+        if (LiveVoiceAgent.isActive) {
+            binding.btnActivate.text = "DEACTIVATE JARVIS"
+            binding.btnActivate.setBackgroundColor(0xFFFF5722.toInt())
+        } else {
+            binding.btnActivate.text = "ACTIVATE JARVIS"
+            binding.btnActivate.setBackgroundColor(0xFF1A73E8.toInt())
         }
     }
-
-    // ------------------------------------------------------------------ //
-    //  Status                                                             //
-    // ------------------------------------------------------------------ //
 
     private fun updateStatusIndicators() {
         val provider = prefManager.selectedLlmProvider
@@ -284,24 +160,13 @@ class MainActivity : AppCompatActivity() {
         binding.tvProvider.text = if (apiKey.isNotBlank()) {
             "Provider: ${provider.displayName} / $model"
         } else {
-            "Provider: Not configured (tap Settings)"
+            "Provider: Not configured (Settings e jan)"
         }
 
-        val a11yEnabled = JarvisAccessibilityService.isRunning
         val notifEnabled = JarvisNotificationListener.isRunning
-        val wakeWordActive = WakeWordService.isRunning
-
-        binding.tvAccessibility.text = buildString {
-            append("A11y: ${if (a11yEnabled) "ON" else "OFF"}")
-            append(" | Notif: ${if (notifEnabled) "ON" else "OFF"}")
-            append(" | Wake: ${if (wakeWordActive) "ON" else "OFF"}")
-        }
+        binding.tvAccessibility.text = "Notifications: ${if (notifEnabled) "ON" else "OFF (Settings e enable koren)"}"
         binding.tvAccessibility.setTextColor(
-            when {
-                a11yEnabled && notifEnabled && wakeWordActive -> 0xFF4CAF50.toInt()
-                a11yEnabled || notifEnabled -> 0xFFFF9800.toInt()
-                else -> 0xFFFF5722.toInt()
-            }
+            if (notifEnabled) 0xFF4CAF50.toInt() else 0xFFFF9800.toInt()
         )
     }
 
@@ -309,48 +174,34 @@ class MainActivity : AppCompatActivity() {
     //  Permissions                                                        //
     // ------------------------------------------------------------------ //
 
+    private fun hasAudioPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+    }
+
     private fun requestPermissions() {
-        val permissionsNeeded = mutableListOf<String>()
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            permissionsNeeded.add(Manifest.permission.RECORD_AUDIO)
-        }
-
-        // Android 13+ notification permission
+        val needed = mutableListOf<String>()
+        if (!hasAudioPermission()) needed.add(Manifest.permission.RECORD_AUDIO)
         if (Build.VERSION.SDK_INT >= 33) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-
-        if (permissionsNeeded.isNotEmpty()) {
-            ActivityCompat.requestPermissions(
-                this,
-                permissionsNeeded.toTypedArray(),
-                REQUEST_AUDIO_PERMISSION
-            )
+        if (needed.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, needed.toTypedArray(), REQUEST_PERMISSIONS)
         }
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_AUDIO_PERMISSION) {
-            val audioGranted = grantResults.isNotEmpty() &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED
-            if (audioGranted) {
-                appendToConversation("SYSTEM", "Audio permission granted. Voice input ready.")
-                // Now that we have mic permission, start wake word if enabled
-                startWakeWordIfEnabled()
+        if (requestCode == REQUEST_PERMISSIONS) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                appendLog("SYSTEM", "Audio permission granted!")
             } else {
-                appendToConversation("SYSTEM", "Audio permission denied. Voice input will not work.")
+                appendLog("SYSTEM", "Audio permission denied - voice kaj korbe na.")
             }
         }
     }
