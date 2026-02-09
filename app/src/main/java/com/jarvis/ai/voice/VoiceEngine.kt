@@ -152,10 +152,12 @@ class VoiceEngine(
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "bn-BD")  // Bengali
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "bn-BD")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            // Keep listening until user stops (longer timeout)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)  // Get top 3 for better accuracy
+            // Shorter timeouts for faster response
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+            // Enable offline mode for faster processing
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         }
 
         try {

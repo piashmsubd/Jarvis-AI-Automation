@@ -117,15 +117,25 @@ class WakeWordService : Service() {
         }
 
         try {
+            // Get wake word sensitivity from settings
+            val prefManager = com.jarvis.ai.util.PreferenceManager(this)
+            val sensitivity = when (prefManager.voiceSensitivity) {
+                0 -> 0.5f  // Low: fewer false positives, harder to trigger
+                1 -> 0.65f // Normal: balanced
+                2 -> 0.75f // High: more sensitive, easier to trigger  
+                3 -> 0.85f // Max: maximum sensitivity, may have false positives
+                else -> 0.7f
+            }
+            
             porcupineManager = PorcupineManager.Builder()
                 .setAccessKey(accessKey)
                 .setKeyword(Porcupine.BuiltInKeyword.JARVIS)
-                .setSensitivity(0.7f)   // 0.0 (fewest false positives) to 1.0 (fewest misses)
+                .setSensitivity(sensitivity)   // Now configurable based on user preference
                 .build(applicationContext, wakeWordCallback)
 
             porcupineManager?.start()
 
-            Log.i(TAG, "Porcupine wake word detection STARTED (keyword: JARVIS)")
+            Log.i(TAG, "Porcupine wake word detection STARTED (keyword: JARVIS, sensitivity: $sensitivity)")
         } catch (e: PorcupineException) {
             Log.e(TAG, "Failed to start Porcupine: ${e.message}", e)
             stopSelf()

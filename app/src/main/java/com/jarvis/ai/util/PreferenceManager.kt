@@ -132,6 +132,16 @@ class PreferenceManager(context: Context) {
     var voiceSensitivity: Int
         get() = prefs.getInt(KEY_VOICE_SENSITIVITY, 2)
         set(value) = prefs.edit().putInt(KEY_VOICE_SENSITIVITY, value).apply()
+    
+    /** Enable continuous listening mode (auto restart after each response) */
+    var continuousListeningMode: Boolean
+        get() = prefs.getBoolean(KEY_CONTINUOUS_LISTENING, true)
+        set(value) = prefs.edit().putBoolean(KEY_CONTINUOUS_LISTENING, value).apply()
+    
+    /** Enable audio feedback beeps for listening state */
+    var enableAudioFeedback: Boolean
+        get() = prefs.getBoolean(KEY_AUDIO_FEEDBACK, false)
+        set(value) = prefs.edit().putBoolean(KEY_AUDIO_FEEDBACK, value).apply()
 
     // ------------------------------------------------------------------ //
     //  Theme Settings                                                      //
@@ -193,6 +203,8 @@ class PreferenceManager(context: Context) {
         const val KEY_TTS_LANGUAGE = "tts_language"
         const val KEY_SYSTEM_PROMPT = "custom_system_prompt"
         const val KEY_VOICE_SENSITIVITY = "voice_sensitivity"
+        const val KEY_CONTINUOUS_LISTENING = "continuous_listening_mode"
+        const val KEY_AUDIO_FEEDBACK = "audio_feedback_enabled"
         const val KEY_THEME_INDEX = "theme_index"
         const val KEY_CUSTOM_ACCENT = "custom_accent_color"
     }
