@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.provider.MediaStore
 import android.os.Bundle
 import android.os.IBinder
 import android.os.PowerManager
@@ -303,6 +304,25 @@ class LiveVoiceAgent : Service() {
                         safeSpeak(goodbye)
                         stopSelf()
                         return@launch
+                    }
+
+                    // Instant greeting response (no LLM needed - zero latency)
+                    val greetingKeywords = listOf(
+                        "hello jarvis", "hi jarvis", "hey jarvis", "jarvis",
+                        "হ্যালো জার্ভিস", "হেই জার্ভিস", "জার্ভিস",
+                        "hello", "hi", "hey"
+                    )
+                    val isGreeting = greetingKeywords.any { 
+                        userSpeech.lowercase().trim() == it || 
+                        userSpeech.lowercase().trim().startsWith("$it ")
+                    }
+                    if (isGreeting && userSpeech.length < 30) {
+                        val greetingResponse = "হ্যাঁ Boss, আপনাকে কি help করতে পারি?"
+                        emitLog("JARVIS", greetingResponse)
+                        _agentState.value = AgentState.SPEAKING
+                        safeSpeak(greetingResponse)
+                        delay(200)
+                        continue
                     }
 
                     // Think
@@ -640,6 +660,20 @@ class LiveVoiceAgent : Service() {
                                     ?: pm.getLaunchIntentForPackage("com.sec.android.gallery3d")
                                 "maps" -> pm.getLaunchIntentForPackage("com.google.android.apps.maps")
                                 "music", "spotify" -> pm.getLaunchIntentForPackage("com.spotify.music")
+                                "phone", "dialer" -> pm.getLaunchIntentForPackage("com.android.dialer")
+                                    ?: pm.getLaunchIntentForPackage("com.samsung.android.dialer")
+                                "contacts" -> pm.getLaunchIntentForPackage("com.android.contacts")
+                                    ?: pm.getLaunchIntentForPackage("com.samsung.android.contacts")
+                                "clock", "alarm" -> pm.getLaunchIntentForPackage("com.android.deskclock")
+                                    ?: pm.getLaunchIntentForPackage("com.sec.android.app.clockpackage")
+                                "calculator" -> pm.getLaunchIntentForPackage("com.android.calculator2")
+                                    ?: pm.getLaunchIntentForPackage("com.sec.android.app.popupcalculator")
+                                "files", "file manager" -> pm.getLaunchIntentForPackage("com.android.documentsui")
+                                    ?: pm.getLaunchIntentForPackage("com.sec.android.app.myfiles")
+                                "play store" -> pm.getLaunchIntentForPackage("com.android.vending")
+                                "twitter", "x" -> pm.getLaunchIntentForPackage("com.twitter.android")
+                                "tiktok" -> pm.getLaunchIntentForPackage("com.zhiliaoapp.musically")
+                                "snapchat" -> pm.getLaunchIntentForPackage("com.snapchat.android")
                                 else -> pm.getLaunchIntentForPackage(appName)
                             }
                             if (launchIntent != null) {
@@ -652,6 +686,37 @@ class LiveVoiceAgent : Service() {
                         } catch (e: Exception) {
                             Log.e(TAG, "Open app error: $appName", e)
                             emitLog("JARVIS", "$appName open failed.")
+                        }
+                    }
+                }
+
+                "take_photo" -> {
+                    // Open camera app for photo
+                    try {
+                        val pm = packageManager
+                        val cameraIntent = pm.getLaunchIntentForPackage("com.android.camera")
+                            ?: pm.getLaunchIntentForPackage("com.sec.android.app.camera")
+                            ?: pm.getLaunchIntentForPackage("com.google.android.GoogleCamera")
+                            ?: Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                        cameraIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(cameraIntent)
+                        emitLog("JARVIS", "Camera open korechi Boss. Photo tulen!")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Camera open failed", e)
+                        emitLog("JARVIS", "Camera open korte parlam na.")
+                    }
+                }
+
+                "set_clipboard" -> {
+                    val text = action.get("text")?.asString ?: ""
+                    if (text.isNotBlank()) {
+                        try {
+                            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val clip = android.content.ClipData.newPlainText("Jarvis", text)
+                            clipboard.setPrimaryClip(clip)
+                            emitLog("JARVIS", "Clipboard e copy korechi: ${text.take(50)}")
+                        } catch (e: Exception) {
+                            emitLog("JARVIS", "Clipboard e copy korte parlam na.")
                         }
                     }
                 }

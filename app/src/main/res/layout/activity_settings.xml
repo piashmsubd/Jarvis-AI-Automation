@@ -83,7 +83,7 @@
             android:id="@+id/tvCustomUrlHelper"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="OpenAI-compatible endpoints:\n• FreedomGPT: https://api.freedomgpt.com/v1/\n• Any OpenAI compatible API base URL works"
+            android:text="FreedomGPT: https://chat.freedomgpt.com/api/v1/\nModel: liberty\nAny OpenAI compatible URL works here"
             android:textColor="#666666"
             android:textSize="11sp"
             android:layout_marginBottom="16dp"

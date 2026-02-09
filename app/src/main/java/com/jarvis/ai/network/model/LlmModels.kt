@@ -235,8 +235,8 @@ enum class LlmProvider(
     ),
     FREEDOMGPT(
         displayName = "FreedomGPT",
-        defaultBaseUrl = "https://api.freedomgpt.com/v1/",
-        defaultModel = "gpt-3.5-turbo"
+        defaultBaseUrl = "https://chat.freedomgpt.com/api/v1/",
+        defaultModel = "liberty"
     ),
     CUSTOM(
         displayName = "OpenAI Compatible (Custom)",
