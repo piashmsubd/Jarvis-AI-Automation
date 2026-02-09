@@ -311,9 +311,7 @@ class LiveVoiceAgent : Service() {
                     val userSpeech = safeListenForSpeech()
 
                     if (userSpeech.isBlank()) {
-                        // No speech — check notifications, then loop again
-                        try { announceNewNotifications() } catch (_: Exception) {}
-                        delay(300)
+                        // No speech — loop immediately (no delay!)
                         continue
                     }
 
@@ -334,38 +332,49 @@ class LiveVoiceAgent : Service() {
                         "হ্যালো জার্ভিস", "হেই জার্ভিস", "জার্ভিস",
                         "hello", "hi", "hey"
                     )
-                    val isGreeting = greetingKeywords.any { 
-                        userSpeech.lowercase().trim() == it || 
+                    val isGreeting = greetingKeywords.any {
+                        userSpeech.lowercase().trim() == it ||
                         userSpeech.lowercase().trim().startsWith("$it ")
                     }
                     if (isGreeting && userSpeech.length < 30) {
-                        val greetingResponse = "হ্যাঁ Boss, আপনাকে কি help করতে পারি?"
+                        val greetingResponse = "হ্যাঁ Boss, বলুন"
                         emitLog("JARVIS", greetingResponse)
                         _agentState.value = AgentState.SPEAKING
                         safeSpeak(greetingResponse)
-                        delay(200)
                         continue
                     }
 
-                    // Think
+                    // INSTANT ACKNOWLEDGMENT — so user knows Jarvis heard them
+                    // This speaks "hmm" while LLM processes in background
                     _agentState.value = AgentState.THINKING
                     updateNotification("Thinking...")
 
-                    val response = try {
-                        askLlm(userSpeech)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "LLM call failed", e)
-                        "Boss, ektu problem hocchhe. Abar bolun."
+                    // Start LLM call in background immediately
+                    val llmDeferred = ioScope.async {
+                        try {
+                            askLlm(userSpeech)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "LLM call failed", e)
+                            "Boss, problem hocchhe. Abar bolun."
+                        }
                     }
+
+                    // Speak quick acknowledgment WHILE LLM is processing
+                    // Only for longer queries (not simple ones)
+                    if (userSpeech.length > 15) {
+                        val ack = listOf("hmm", "accha", "bujhchi", "thik ache").random()
+                        // Don't wait for ack to finish — fire and forget
+                        androidTts?.speak(ack, TextToSpeech.QUEUE_FLUSH, null, "ack_${System.currentTimeMillis()}")
+                    }
+
+                    // Wait for LLM response
+                    val response = llmDeferred.await()
                     emitLog("JARVIS", response)
 
-                    // Speak
+                    // Speak the full response
                     _agentState.value = AgentState.SPEAKING
                     updateNotification("Speaking...")
                     safeSpeak(response)
-
-                    // Brief pause before next listen
-                    delay(100)
 
                 } catch (e: CancellationException) {
                     throw e // Don't catch coroutine cancellation
@@ -433,7 +442,8 @@ class LiveVoiceAgent : Service() {
 
         return withContext(Dispatchers.IO) {
             try {
-                val result = client.chat(messages)
+                // Cap LLM wait to 15 seconds max
+                val result = withTimeout(15_000L) { client.chat(messages) }
                 result.fold(
                     onSuccess = { response ->
                         conversationHistory.add(ChatMessage(role = "assistant", content = response))
