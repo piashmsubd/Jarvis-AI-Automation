@@ -365,7 +365,7 @@ class LiveVoiceAgent : Service() {
                     safeSpeak(response)
 
                     // Brief pause before next listen
-                    delay(200)
+                    delay(100)
 
                 } catch (e: CancellationException) {
                     throw e // Don't catch coroutine cancellation
@@ -745,6 +745,110 @@ class LiveVoiceAgent : Service() {
                     }
                 }
 
+                "send_sms" -> {
+                    val phone = action.get("phone")?.asString ?: ""
+                    val text = action.get("text")?.asString ?: ""
+                    if (phone.isNotBlank() && text.isNotBlank()) {
+                        try {
+                            val smsManager = if (android.os.Build.VERSION.SDK_INT >= 31) {
+                                getSystemService(android.telephony.SmsManager::class.java)
+                            } else {
+                                @Suppress("DEPRECATION")
+                                android.telephony.SmsManager.getDefault()
+                            }
+                            val parts = smsManager.divideMessage(text)
+                            smsManager.sendMultipartTextMessage(phone, null, parts, null, null)
+                            emitLog("JARVIS", "SMS sent to $phone: $text")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "SMS send failed", e)
+                            emitLog("JARVIS", "SMS send korte parlam na: ${e.message?.take(30)}")
+                        }
+                    }
+                }
+
+                "read_sms" -> {
+                    val count = action.get("count")?.asInt ?: 5
+                    try {
+                        val cursor = contentResolver.query(
+                            android.provider.Telephony.Sms.CONTENT_URI,
+                            arrayOf("address", "body", "date", "type"),
+                            null, null, "date DESC"
+                        )
+                        val messages = mutableListOf<String>()
+                        cursor?.use {
+                            var i = 0
+                            while (it.moveToNext() && i < count) {
+                                val addr = it.getString(0) ?: "Unknown"
+                                val body = it.getString(1) ?: ""
+                                val type = it.getInt(3)
+                                val dir = if (type == 1) "Received" else "Sent"
+                                messages.add("[$dir] $addr: $body")
+                                i++
+                            }
+                        }
+                        emitLog("JARVIS", if (messages.isEmpty()) "No SMS found." else "SMS:\n${messages.joinToString("\n")}")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Read SMS failed", e)
+                        emitLog("JARVIS", "SMS read korte parlam na. Permission den Settings e.")
+                    }
+                }
+
+                "read_contacts" -> {
+                    val query = action.get("query")?.asString ?: ""
+                    try {
+                        val uri = android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI
+                        val selection = if (query.isNotBlank()) {
+                            "${android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?"
+                        } else null
+                        val selArgs = if (query.isNotBlank()) arrayOf("%$query%") else null
+                        val cursor = contentResolver.query(
+                            uri,
+                            arrayOf(
+                                android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                                android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
+                            ),
+                            selection, selArgs,
+                            "${android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} ASC"
+                        )
+                        val contacts = mutableListOf<String>()
+                        cursor?.use {
+                            var i = 0
+                            while (it.moveToNext() && i < 10) {
+                                val name = it.getString(0) ?: ""
+                                val number = it.getString(1) ?: ""
+                                contacts.add("$name: $number")
+                                i++
+                            }
+                        }
+                        emitLog("JARVIS", if (contacts.isEmpty()) "No contacts found." else "Contacts:\n${contacts.joinToString("\n")}")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Read contacts failed", e)
+                        emitLog("JARVIS", "Contacts read korte parlam na.")
+                    }
+                }
+
+                "make_call" -> {
+                    val phone = action.get("phone")?.asString ?: ""
+                    if (phone.isNotBlank()) {
+                        try {
+                            val callIntent = Intent(Intent.ACTION_CALL).apply {
+                                data = android.net.Uri.parse("tel:$phone")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            startActivity(callIntent)
+                            emitLog("JARVIS", "Calling $phone...")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Call failed", e)
+                            emitLog("JARVIS", "Call korte parlam na. Permission den.")
+                        }
+                    }
+                }
+
+                "create_image" -> {
+                    val prompt = action.get("prompt")?.asString ?: ""
+                    emitLog("JARVIS", "Image concept: $prompt\nBoss, ekhon image generation feature ashche. Apni eita describe korechi.")
+                }
+
                 else -> Log.d(TAG, "Unknown action: $type")
             }
         } catch (e: Exception) {
@@ -781,9 +885,9 @@ class LiveVoiceAgent : Service() {
                 // Small delay between listen cycles to let Android release mic
                 // This is the KEY fix — without it, SpeechRecognizer refuses to start
                 val delayMs = when {
-                    consecutiveSttErrors > 3 -> 2000L   // Many errors: longer cooldown
-                    consecutiveSttErrors > 0 -> 1000L   // Some errors: medium cooldown
-                    else -> 500L                         // No errors: quick restart
+                    consecutiveSttErrors > 3 -> 1000L   // Many errors: longer cooldown
+                    consecutiveSttErrors > 0 -> 500L   // Some errors: medium cooldown
+                    else -> 200L                         // No errors: quick restart
                 }
                 delay(delayMs)
 
