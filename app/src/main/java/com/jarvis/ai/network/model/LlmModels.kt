@@ -233,8 +233,13 @@ enum class LlmProvider(
         defaultBaseUrl = "https://api.groq.com/openai/v1/",
         defaultModel = "llama-3.3-70b-versatile"
     ),
+    FREEDOMGPT(
+        displayName = "FreedomGPT",
+        defaultBaseUrl = "https://api.freedomgpt.com/v1/",
+        defaultModel = "gpt-3.5-turbo"
+    ),
     CUSTOM(
-        displayName = "Custom Provider",
+        displayName = "OpenAI Compatible (Custom)",
         defaultBaseUrl = "",
         defaultModel = ""
     );

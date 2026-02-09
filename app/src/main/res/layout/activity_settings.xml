@@ -65,7 +65,7 @@
             android:layout_height="wrap_content"
             android:hint="Custom Base URL"
             android:visibility="gone"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="#888888"
             app:boxStrokeColor="#1A73E8">
 
@@ -77,6 +77,17 @@
                 android:textSize="14sp"
                 android:inputType="textUri" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- OpenAI-compatible endpoint helper text -->
+        <TextView
+            android:id="@+id/tvCustomUrlHelper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="OpenAI-compatible endpoints:\n• FreedomGPT: https://api.freedomgpt.com/v1/\n• Any OpenAI compatible API base URL works"
+            android:textColor="#666666"
+            android:textSize="11sp"
+            android:layout_marginBottom="16dp"
+            android:fontFamily="monospace" />
 
         <!-- Section: API Keys -->
         <TextView

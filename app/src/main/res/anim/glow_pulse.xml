@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slower, subtle glow pulse for the background glow layer -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/linear_interpolator"
+    android:shareInterpolator="true">
+
+    <scale
+        android:fromXScale="0.85"
+        android:toXScale="1.15"
+        android:fromYScale="0.85"
+        android:toYScale="1.15"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:duration="2000"
+        android:repeatCount="infinite"
+        android:repeatMode="reverse" />
+
+    <alpha
+        android:fromAlpha="0.3"
+        android:toAlpha="0.7"
+        android:duration="2000"
+        android:repeatCount="infinite"
+        android:repeatMode="reverse" />
+
+</set>

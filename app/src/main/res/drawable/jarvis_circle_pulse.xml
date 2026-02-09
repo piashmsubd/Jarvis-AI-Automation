@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arc Reactor circle — gradient glow ring for Jarvis AI -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Outer soft glow -->
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="50%p"
+                android:centerX="0.5"
+                android:centerY="0.5"
+                android:startColor="#5500E5FF"
+                android:endColor="#00000000" />
+            <size android:width="220dp" android:height="220dp" />
+        </shape>
+    </item>
+
+    <!-- Middle ring glow -->
+    <item
+        android:left="30dp"
+        android:top="30dp"
+        android:right="30dp"
+        android:bottom="30dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="50%p"
+                android:centerX="0.5"
+                android:centerY="0.5"
+                android:startColor="#8800E5FF"
+                android:endColor="#2200E5FF" />
+        </shape>
+    </item>
+
+    <!-- Outer ring stroke -->
+    <item
+        android:left="35dp"
+        android:top="35dp"
+        android:right="35dp"
+        android:bottom="35dp">
+        <shape android:shape="oval">
+            <stroke android:width="2dp" android:color="#BB00E5FF" />
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+
+    <!-- Inner bright core -->
+    <item
+        android:left="60dp"
+        android:top="60dp"
+        android:right="60dp"
+        android:bottom="60dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="50%p"
+                android:centerX="0.5"
+                android:centerY="0.5"
+                android:startColor="#CC00E5FF"
+                android:centerColor="#6600E5FF"
+                android:endColor="#1100E5FF" />
+        </shape>
+    </item>
+
+    <!-- Inner ring stroke -->
+    <item
+        android:left="65dp"
+        android:top="65dp"
+        android:right="65dp"
+        android:bottom="65dp">
+        <shape android:shape="oval">
+            <stroke android:width="1.5dp" android:color="#AA00E5FF" />
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+
+    <!-- Center bright dot -->
+    <item
+        android:left="90dp"
+        android:top="90dp"
+        android:right="90dp"
+        android:bottom="90dp">
+        <shape android:shape="oval">
+            <solid android:color="#DD00E5FF" />
+        </shape>
+    </item>
+
+</layer-list>

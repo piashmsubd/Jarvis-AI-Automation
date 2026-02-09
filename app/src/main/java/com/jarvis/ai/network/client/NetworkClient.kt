@@ -83,6 +83,7 @@ object NetworkClient {
     fun getLlmService(provider: LlmProvider, customBaseUrl: String? = null): LlmApiService {
         val baseUrl = when (provider) {
             LlmProvider.CUSTOM -> customBaseUrl ?: throw IllegalArgumentException("Custom provider requires a base URL")
+            LlmProvider.FREEDOMGPT -> customBaseUrl?.takeIf { it.isNotBlank() } ?: provider.defaultBaseUrl
             else -> provider.defaultBaseUrl
         }
         return getRetrofit(baseUrl).create(LlmApiService::class.java)
@@ -94,6 +95,7 @@ object NetworkClient {
     fun getLlmStreamingService(provider: LlmProvider, customBaseUrl: String? = null): LlmApiService {
         val baseUrl = when (provider) {
             LlmProvider.CUSTOM -> customBaseUrl ?: throw IllegalArgumentException("Custom provider requires a base URL")
+            LlmProvider.FREEDOMGPT -> customBaseUrl?.takeIf { it.isNotBlank() } ?: provider.defaultBaseUrl
             else -> provider.defaultBaseUrl
         }
         return getRetrofit(baseUrl, streaming = true).create(LlmApiService::class.java)

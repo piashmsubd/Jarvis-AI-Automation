@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Jarvis AI Theme — modby piash -->
+    <!-- Jarvis AI Theme — modby piash v2.0 -->
     <style name="Theme.JarvisAI" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Iron Man / Jarvis inspired color palette -->
         <item name="colorPrimary">#00E5FF</item>
@@ -12,6 +12,20 @@
         <item name="android:statusBarColor">#0A0A0F</item>
         <item name="android:navigationBarColor">#0A0A0F</item>
         <item name="android:windowBackground">@color/jarvis_background</item>
+
+        <!-- Immersive dark feel -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- Window animations -->
+        <item name="android:windowAnimationStyle">@style/JarvisWindowAnim</item>
+    </style>
+
+    <!-- Window enter/exit animations -->
+    <style name="JarvisWindowAnim" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/fade_in</item>
+        <item name="android:activityCloseExitAnimation">@android:anim/fade_out</item>
     </style>
 
     <!-- Colors -->
@@ -27,4 +41,11 @@
     <color name="jarvis_warning">#FFD600</color>
     <color name="jarvis_error">#FF5252</color>
     <color name="jarvis_input_bg">#1E1E2E</color>
+    <color name="jarvis_border">#1E3A5F</color>
+    <color name="jarvis_reactor_listening">#00E5FF</color>
+    <color name="jarvis_reactor_thinking">#FF6D00</color>
+    <color name="jarvis_reactor_speaking">#00E676</color>
+    <color name="jarvis_reactor_inactive">#FF5252</color>
+    <color name="jarvis_reactor_executing">#FFD600</color>
+    <color name="jarvis_reactor_paused">#7A8899</color>
 </resources>
