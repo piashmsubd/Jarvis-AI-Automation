@@ -904,37 +904,48 @@ class LiveVoiceAgent : Service() {
      * Solution:
      * 1. Create FRESH SpeechRecognizer EVERY time (destroy old one first)
      * 2. Request AUDIO FOCUS before starting (ensures mic is free)
-     * 3. Add small delay (700ms) between destroy and create to let Android
+     * 3. Add small delay between destroy and create to let Android
      *    release internal resources
      * 4. Use language from settings (not hardcoded)
      * 5. Configure silence timeouts based on voice sensitivity setting
+     * 6. Reset error counter more aggressively to prevent accumulating delays
      */
     private suspend fun safeListenForSpeech(): String {
         return try {
             withTimeout(STT_TIMEOUT_MS) {
                 // Small delay between listen cycles to let Android release mic
-                // This is the KEY fix — without it, SpeechRecognizer refuses to start
+                // Reduced delays for faster response time
                 val delayMs = when {
-                    consecutiveSttErrors > 3 -> 1000L   // Many errors: longer cooldown
-                    consecutiveSttErrors > 0 -> 500L   // Some errors: medium cooldown
-                    else -> 200L                         // No errors: quick restart
+                    consecutiveSttErrors > 5 -> 800L    // Many errors: longer cooldown
+                    consecutiveSttErrors > 2 -> 300L    // Some errors: medium cooldown
+                    else -> 100L                         // No/few errors: very quick restart
                 }
                 delay(delayMs)
 
                 val result = listenForSpeechOnce()
                 if (result.isNotBlank()) {
                     consecutiveSttErrors = 0  // Reset on success
+                } else {
+                    // Only increment for real errors, not empty results
+                    // Reset counter after a few empty results to prevent delay accumulation
+                    consecutiveSttErrors++
+                    if (consecutiveSttErrors > 8) {
+                        Log.d(TAG, "Resetting error counter to prevent excessive delays")
+                        consecutiveSttErrors = 0
+                    }
                 }
                 result
             }
         } catch (e: TimeoutCancellationException) {
             Log.d(TAG, "STT timeout — no speech")
             consecutiveSttErrors++
+            if (consecutiveSttErrors > 8) consecutiveSttErrors = 0
             ""
         } catch (e: Exception) {
             Log.e(TAG, "STT error — recovering", e)
             consecutiveSttErrors++
-            delay(1000)
+            if (consecutiveSttErrors > 8) consecutiveSttErrors = 0
+            delay(500)
             ""
         }
     }
@@ -973,12 +984,13 @@ class LiveVoiceAgent : Service() {
                 val sttLang = prefManager.sttLanguage
 
                 // Get silence timeouts from voice sensitivity
+                // Reduced timeouts for faster response to speech end
                 val (possibleSilence, completeSilence) = when (prefManager.voiceSensitivity) {
-                    0 -> 6000L to 8000L    // Low: long silence allowed
-                    1 -> 4000L to 6000L    // Normal
-                    2 -> 3000L to 4000L    // High: shorter silence = faster response
-                    3 -> 2000L to 3000L    // Max Focus: very quick
-                    else -> 3000L to 5000L
+                    0 -> 5000L to 7000L    // Low: long silence allowed
+                    1 -> 3000L to 5000L    // Normal: balanced
+                    2 -> 2000L to 3500L    // High: shorter silence = faster response
+                    3 -> 1500L to 2500L    // Max Focus: very quick
+                    else -> 2500L to 4000L // Default: slightly faster than before
                 }
 
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -1016,7 +1028,13 @@ class LiveVoiceAgent : Service() {
                             else -> "UNKNOWN($error)"
                         }
                         Log.d(TAG, "STT error: $errorName")
-                        consecutiveSttErrors++
+                        
+                        // Don't count benign errors (no speech detected) as real errors
+                        // This prevents unnecessary delays when user is just silent
+                        if (error != SpeechRecognizer.ERROR_NO_MATCH && 
+                            error != SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                            consecutiveSttErrors++
+                        }
                         safeResume("")
                     }
 
@@ -1126,6 +1144,9 @@ class LiveVoiceAgent : Service() {
             androidTts?.stop()
         } catch (e: Exception) {
             Log.e(TAG, "TTS error — recovering", e)
+        } finally {
+            // Always ensure state returns to ready for next listen cycle
+            _agentState.value = AgentState.IDLE
         }
     }
 
