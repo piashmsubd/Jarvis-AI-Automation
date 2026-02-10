@@ -185,6 +185,11 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
+        // About
+        binding.btnAbout?.setOnClickListener {
+            startActivity(Intent(this, com.jarvis.ai.ui.AboutActivity::class.java))
+        }
+
         // THE BIG BUTTON
         binding.btnActivate.setOnClickListener {
             if (LiveVoiceAgent.isActive) {

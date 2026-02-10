@@ -62,7 +62,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="  v3.0"
+                    android:text="  v5.0"
                     android:textColor="#1E3A5F"
                     android:textSize="10sp"
                     android:fontFamily="monospace"
@@ -71,6 +71,16 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnAbout"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_info_details"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="About"
+            app:tint="#7A8899"
+            android:layout_marginEnd="4dp" />
 
         <ImageButton
             android:id="@+id/btnSettings"

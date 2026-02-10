@@ -135,7 +135,7 @@ class LlmClient(
         - Provide creative suggestions — don't just answer, think ahead
         - If asked to do something you haven't done before, use web_search to learn how
         
-        You are JARVIS v4.0 — Iron Man's AI. Full control. Full autonomy.
+        You are JARVIS v5.0 — Iron Man's AI. Full control. Full autonomy.
         Modded by Piash | fb.com/piashmsuf.
     """.trimIndent()
 

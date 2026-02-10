@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.speech.tts.TextToSpeech
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.OvershootInterpolator
@@ -17,12 +18,16 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.doOnEnd
 import com.jarvis.ai.R
 import com.jarvis.ai.ui.main.MainActivity
+import java.util.Locale
 
-class SplashActivity : AppCompatActivity() {
+class SplashActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+
+    private var tts: TextToSpeech? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
+        tts = TextToSpeech(this, this)
 
         val tvJarvis = findViewById<TextView>(R.id.tvSplashTitle)
         val tvModby = findViewById<TextView>(R.id.tvSplashModby)
@@ -30,9 +35,12 @@ class SplashActivity : AppCompatActivity() {
         val progressBar = findViewById<ProgressBar>(R.id.splashProgress)
         val ivCircle = findViewById<ImageView>(R.id.ivSplashCircle)
 
+        val tvWelcome = findViewById<TextView>(R.id.tvWelcome)
+
         // Initially invisible
         tvJarvis.alpha = 0f
         tvModby.alpha = 0f
+        tvWelcome.alpha = 0f
         tvStatus.alpha = 0f
         progressBar.alpha = 0f
         ivCircle.alpha = 0f
@@ -78,6 +86,10 @@ class SplashActivity : AppCompatActivity() {
         Handler(Looper.getMainLooper()).postDelayed({ modbyFade.start() }, 700)
         Handler(Looper.getMainLooper()).postDelayed({ statusFade.start() }, 900)
 
+        Handler(Looper.getMainLooper()).postDelayed({
+            ObjectAnimator.ofFloat(tvWelcome, "alpha", 0f, 1f).setDuration(500).start()
+        }, 1200)
+
         // Animate status text
         val statuses = listOf(
             "Initializing systems...",
@@ -98,5 +110,17 @@ class SplashActivity : AppCompatActivity() {
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             finish()
         }, 3200)
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            tts?.language = Locale("bn", "BD")
+            tts?.speak("Welcome Boss! Jarvis systems online.", TextToSpeech.QUEUE_FLUSH, null, "welcome")
+        }
+    }
+
+    override fun onDestroy() {
+        tts?.shutdown()
+        super.onDestroy()
     }
 }

@@ -143,6 +143,12 @@
             android:label="Jarvis Settings"
             android:parentActivityName=".ui.main.MainActivity" />
 
+        <activity
+            android:name=".ui.AboutActivity"
+            android:exported="false"
+            android:label="About Jarvis AI"
+            android:parentActivityName=".ui.main.MainActivity" />
+
         <!-- ====================================================== -->
         <!--  WEBVIEW ACTIVITY  (Browser / Search)                   -->
         <!--  Full browser with JS, DOM storage, and page text       -->
