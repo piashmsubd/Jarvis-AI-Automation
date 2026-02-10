@@ -112,18 +112,27 @@
         tools:targetApi="34">
 
         <!-- ====================================================== -->
-        <!--  MAIN ACTIVITY                                          -->
+        <!--  SPLASH ACTIVITY (Boot-up screen)                       -->
         <!-- ====================================================== -->
         <activity
-            android:name=".ui.main.MainActivity"
+            android:name=".ui.SplashActivity"
             android:exported="true"
-            android:launchMode="singleTop"
             android:theme="@style/Theme.JarvisAI">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ====================================================== -->
+        <!--  MAIN ACTIVITY                                          -->
+        <!-- ====================================================== -->
+        <activity
+            android:name=".ui.main.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.JarvisAI" />
+        
 
         <!-- ====================================================== -->
         <!--  SETTINGS ACTIVITY                                      -->
