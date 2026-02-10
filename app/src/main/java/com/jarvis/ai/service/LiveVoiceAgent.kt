@@ -332,6 +332,9 @@ class LiveVoiceAgent : Service() {
                     _agentState.value = AgentState.LISTENING
                     updateNotification("Listening... Bolun Boss!")
 
+                    // Check battery status periodically
+                    checkBatterySaver()
+
                     val userSpeech = safeListenForSpeech()
 
                     if (userSpeech.isBlank()) continue // Immediately re-listen
@@ -347,8 +350,40 @@ class LiveVoiceAgent : Service() {
                         return@launch
                     }
 
-                    // ── INSTANT GREETING (no LLM, ~0ms) ──
+                    // Normalize speech for matching
                     val speech = userSpeech.lowercase().trim()
+
+                    // ── QUICK COMMANDS (J1-J9) ──
+                    val quickCmd = QUICK_COMMANDS[speech.replace(" ", "")]
+                    if (quickCmd != null) {
+                        val parts = quickCmd.split(":")
+                        val actionType = parts[0]
+                        val actionParam = parts.getOrNull(1) ?: ""
+                        val quickAction = com.google.gson.JsonObject().apply {
+                            addProperty("action", actionType)
+                            if (actionParam.isNotBlank()) {
+                                when (actionType) {
+                                    "open_app" -> addProperty("app", actionParam)
+                                    "device_info" -> addProperty("type", actionParam)
+                                    else -> {}
+                                }
+                            }
+                        }
+                        emitLog("JARVIS", "Quick command: $quickCmd")
+                        speakFireAndForget("thik ache Boss")
+                        try { executeAction(quickAction) } catch (_: Exception) {}
+                        continue
+                    }
+
+                    // ── EXPORT COMMAND ──
+                    if (speech.contains("export") || speech.contains("save chat") || speech.contains("chat save")) {
+                        val result = exportConversation()
+                        emitLog("JARVIS", result)
+                        safeSpeak(result)
+                        continue
+                    }
+
+                    // ── INSTANT GREETING (no LLM, ~0ms) ──
                     if (speech.length < 25 && GREETING_KEYWORDS.any { speech == it || speech.startsWith("$it ") }) {
                         emitLog("JARVIS", "হ্যাঁ Boss, বলুন!")
                         safeSpeak("হ্যাঁ Boss, বলুন!")
@@ -407,6 +442,73 @@ class LiveVoiceAgent : Service() {
         "হ্যালো জার্ভিস", "হেই জার্ভিস", "জার্ভিস",
         "hello", "hi", "hey"
     )
+
+    // Quick command shortcuts
+    private val QUICK_COMMANDS = mapOf(
+        "j1" to "open_app:whatsapp",
+        "j2" to "read_messages",
+        "j3" to "open_app:youtube",
+        "j4" to "open_app:chrome",
+        "j5" to "device_info:battery",
+        "j6" to "read_sms",
+        "j7" to "open_app:camera",
+        "j8" to "open_app:settings",
+        "j9" to "web_search",
+        "j0" to "read_screen"
+    )
+
+    /**
+     * Check if battery is low and switch to saver mode.
+     * In saver mode: longer STT cooldown, skip notifications, shorter LLM context
+     */
+    private var batterySaverMode = false
+
+    private fun checkBatterySaver() {
+        try {
+            val battery = DeviceInfoProvider.getBatteryInfo(this@LiveVoiceAgent)
+            val wasInSaver = batterySaverMode
+            batterySaverMode = battery.percentage in 1..15 && !battery.isCharging
+
+            if (batterySaverMode && !wasInSaver) {
+                scope.launch {
+                    emitLog("SYSTEM", "Battery ${battery.percentage}% — Battery Saver Mode ON")
+                    speakFireAndForget("Boss, battery ${battery.percentage} percent. Battery saver mode ON.")
+                }
+            } else if (!batterySaverMode && wasInSaver) {
+                scope.launch {
+                    emitLog("SYSTEM", "Battery OK — Normal Mode")
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    /**
+     * Export conversation history as a text file.
+     */
+    private suspend fun exportConversation(): String {
+        return try {
+            val messages = memoryDb?.getRecentMessages(100) ?: return "No messages to export."
+            val sb = StringBuilder("=== JARVIS AI Conversation Export ===\n")
+            sb.appendLine("Date: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}")
+            sb.appendLine("modby Piash | fb.com/piashmsuf")
+            sb.appendLine("=" .repeat(40))
+            sb.appendLine()
+            for (msg in messages) {
+                val time = java.text.SimpleDateFormat("MM/dd HH:mm", java.util.Locale.getDefault())
+                    .format(java.util.Date(msg.timestamp))
+                sb.appendLine("[$time] ${msg.role.uppercase()}: ${msg.content}")
+            }
+            // Save to file
+            val dir = getExternalFilesDir(null)
+            val file = java.io.File(dir, "jarvis_export_${System.currentTimeMillis()}.txt")
+            withContext(Dispatchers.IO) { file.writeText(sb.toString()) }
+            emitLog("JARVIS", "Exported to: ${file.absolutePath}")
+            "Conversation exported: ${file.name}"
+        } catch (e: Exception) {
+            Log.e(TAG, "Export failed", e)
+            "Export failed: ${e.message}"
+        }
+    }
 
     /**
      * Speaks text WITHOUT waiting for it to finish.
@@ -1037,6 +1139,29 @@ class LiveVoiceAgent : Service() {
                         } catch (e: Exception) {
                             Log.e(TAG, "Save fact failed", e)
                         }
+                    }
+                }
+
+                "schedule_task" -> {
+                    val task = action.get("task")?.asString ?: ""
+                    val delayMinutes = action.get("delay_minutes")?.asInt ?: 0
+                    if (task.isNotBlank() && delayMinutes > 0) {
+                        scope.launch {
+                            emitLog("JARVIS", "Task scheduled: '$task' in $delayMinutes minutes")
+                            delay(delayMinutes * 60 * 1000L)
+                            emitLog("JARVIS", "Running scheduled task: $task")
+                            // Parse the task as if user said it
+                            val response = try { askLlm(task) } catch (_: Exception) { "Task failed." }
+                            emitLog("JARVIS", response)
+                            safeSpeak("Boss, scheduled task done: $response")
+                        }
+                    }
+                }
+
+                "export_chat" -> {
+                    scope.launch {
+                        val result = exportConversation()
+                        safeSpeak(result)
                     }
                 }
 

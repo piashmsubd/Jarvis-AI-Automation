@@ -228,6 +228,14 @@
             android:foregroundServiceType="specialUse" />
 
         <!-- ====================================================== -->
+        <!--  SHAKE DETECTOR SERVICE                                  -->
+        <!-- ====================================================== -->
+        <service
+            android:name=".service.ShakeDetectorService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
+        <!-- ====================================================== -->
         <!--  BOOT RECEIVER (auto-start wake word on device boot)    -->
         <!-- ====================================================== -->
         <receiver
