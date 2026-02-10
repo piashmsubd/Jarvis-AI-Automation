@@ -33,6 +33,7 @@ import com.jarvis.ai.util.DeviceInfoProvider
 import com.jarvis.ai.util.PreferenceManager
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.jarvis.ai.memory.JarvisMemoryDb
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -122,6 +123,7 @@ class LiveVoiceAgent : Service() {
     private val gson = Gson()
 
     private lateinit var prefManager: PreferenceManager
+    private var memoryDb: JarvisMemoryDb? = null
     private var llmClient: LlmClient? = null
 
     // TTS backends
@@ -207,6 +209,7 @@ class LiveVoiceAgent : Service() {
     // ------------------------------------------------------------------ //
 
     private fun initializeComponents() {
+        memoryDb = JarvisMemoryDb.getInstance(this)
         // LLM client
         val provider = prefManager.selectedLlmProvider
         val apiKey = prefManager.getApiKeyForProvider(provider)
@@ -467,6 +470,8 @@ class LiveVoiceAgent : Service() {
         val client = llmClient ?: return "Boss, AI setup koreni. Settings e API key dien."
 
         conversationHistory.add(ChatMessage(role = "user", content = userText))
+        // Save to persistent memory
+        try { memoryDb?.saveMessage("user", userText) } catch (_: Exception) {}
         if (conversationHistory.size > 20) conversationHistory.removeFirst()
 
         val messages = buildMessages(client)
@@ -477,6 +482,8 @@ class LiveVoiceAgent : Service() {
                 result.fold(
                     onSuccess = { response ->
                         conversationHistory.add(ChatMessage(role = "assistant", content = response))
+                        // Save to persistent memory
+                        try { memoryDb?.saveMessage("assistant", response) } catch (_: Exception) {}
 
                         // Execute any action in the response (non-blocking)
                         val action = tryParseAction(response)
@@ -558,6 +565,21 @@ class LiveVoiceAgent : Service() {
         // Device info
         try {
             messages.add(ChatMessage(role = "system", content = "[DEVICE]\n${DeviceInfoProvider.getDeviceSummary(this)}"))
+        } catch (_: Exception) {}
+
+        // Inject persistent memory
+        try {
+            val db = memoryDb
+            if (db != null) {
+                val factsCtx = db.getFactsContext()
+                if (factsCtx.isNotBlank()) {
+                    messages.add(ChatMessage(role = "system", content = factsCtx))
+                }
+                val memoryCtx = db.getMemoryContext(10)
+                if (memoryCtx.isNotBlank()) {
+                    messages.add(ChatMessage(role = "system", content = memoryCtx))
+                }
+            }
         } catch (_: Exception) {}
 
         messages.addAll(conversationHistory)
@@ -887,6 +909,136 @@ class LiveVoiceAgent : Service() {
                 "create_image" -> {
                     val prompt = action.get("prompt")?.asString ?: ""
                     emitLog("JARVIS", "Image concept: $prompt\nBoss, ekhon image generation feature ashche. Apni eita describe korechi.")
+                }
+
+                "run_shell" -> {
+                    val command = action.get("command")?.asString ?: ""
+                    if (command.isNotBlank()) {
+                        try {
+                            val process = withContext(Dispatchers.IO) {
+                                Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
+                            }
+                            val output = withContext(Dispatchers.IO) {
+                                process.inputStream.bufferedReader().readText().take(2000)
+                            }
+                            val error = withContext(Dispatchers.IO) {
+                                process.errorStream.bufferedReader().readText().take(500)
+                            }
+                            val exitCode = withContext(Dispatchers.IO) { process.waitFor() }
+                            val result = if (output.isNotBlank()) output else error
+                            emitLog("SHELL", "$ $command\n${result}\n[exit: $exitCode]")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Shell exec failed", e)
+                            emitLog("SHELL", "Failed: ${e.message}")
+                        }
+                    }
+                }
+
+                "run_root" -> {
+                    val command = action.get("command")?.asString ?: ""
+                    if (command.isNotBlank()) {
+                        try {
+                            val process = withContext(Dispatchers.IO) {
+                                Runtime.getRuntime().exec(arrayOf("su", "-c", command))
+                            }
+                            val output = withContext(Dispatchers.IO) {
+                                process.inputStream.bufferedReader().readText().take(2000)
+                            }
+                            val error = withContext(Dispatchers.IO) {
+                                process.errorStream.bufferedReader().readText().take(500)
+                            }
+                            val exitCode = withContext(Dispatchers.IO) { process.waitFor() }
+                            val result = if (output.isNotBlank()) output else error
+                            emitLog("ROOT", "# $command\n${result}\n[exit: $exitCode]")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Root exec failed", e)
+                            emitLog("ROOT", "Root access failed: ${e.message}")
+                        }
+                    }
+                }
+
+                "run_termux" -> {
+                    val command = action.get("command")?.asString ?: ""
+                    if (command.isNotBlank()) {
+                        try {
+                            // Send command to Termux via RUN_COMMAND intent
+                            val termuxIntent = Intent().apply {
+                                setClassName("com.termux", "com.termux.app.RunCommandService")
+                                action = "com.termux.RUN_COMMAND"
+                                putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/bash")
+                                putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf("-c", command))
+                                putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
+                            }
+                            startService(termuxIntent)
+                            emitLog("TERMUX", "Sent to Termux: $command")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Termux exec failed", e)
+                            // Fallback to direct shell
+                            try {
+                                val process = withContext(Dispatchers.IO) {
+                                    Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
+                                }
+                                val output = withContext(Dispatchers.IO) {
+                                    process.inputStream.bufferedReader().readText().take(2000)
+                                }
+                                emitLog("SHELL", "$ $command\n$output")
+                            } catch (e2: Exception) {
+                                emitLog("SHELL", "Failed: ${e2.message}")
+                            }
+                        }
+                    }
+                }
+
+                "edit_file" -> {
+                    val path = action.get("path")?.asString ?: ""
+                    val content = action.get("content")?.asString ?: ""
+                    if (path.isNotBlank() && content.isNotBlank()) {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                java.io.File(path).writeText(content)
+                            }
+                            emitLog("JARVIS", "File written: $path")
+                        } catch (e: Exception) {
+                            // Try with root
+                            try {
+                                val escaped = content.replace("'", "'\\''")
+                                withContext(Dispatchers.IO) {
+                                    Runtime.getRuntime().exec(arrayOf("su", "-c", "echo '$escaped' > $path")).waitFor()
+                                }
+                                emitLog("JARVIS", "File written (root): $path")
+                            } catch (e2: Exception) {
+                                emitLog("JARVIS", "File write failed: ${e2.message}")
+                            }
+                        }
+                    }
+                }
+
+                "read_file" -> {
+                    val path = action.get("path")?.asString ?: ""
+                    if (path.isNotBlank()) {
+                        try {
+                            val content = withContext(Dispatchers.IO) {
+                                java.io.File(path).readText().take(3000)
+                            }
+                            emitLog("FILE", "$path:\n$content")
+                        } catch (e: Exception) {
+                            emitLog("FILE", "Read failed: ${e.message}")
+                        }
+                    }
+                }
+
+                "save_fact" -> {
+                    val key = action.get("key")?.asString ?: ""
+                    val value = action.get("value")?.asString ?: ""
+                    if (key.isNotBlank() && value.isNotBlank()) {
+                        try {
+                            memoryDb?.saveFact(key, value)
+                            emitLog("MEMORY", "Remembered: $key = $value")
+                            Log.i(TAG, "Saved fact: $key = $value")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Save fact failed", e)
+                        }
+                    }
                 }
 
                 else -> Log.d(TAG, "Unknown action: $type")
